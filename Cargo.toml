@@ -1,0 +1,36 @@
+[package]
+name = "dprint-plugin-jupyter"
+version = "0.0.1"
+authors = ["David Sherret <dsherret@gmail.com>"]
+edition = "2021"
+homepage = "https://github.com/dprint/dprint-plugin-jupyter"
+keywords = ["formatting", "formatter", "jupyter"]
+license = "MIT"
+repository = "https://github.com/dprint/dprint-plugin-jupyter"
+description = "Formats code blocks in Jupyter notebooks."
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
+debug-assertions = false
+overflow-checks = false
+panic = "abort"
+
+[features]
+wasm = ["dprint-core/wasm"]
+
+[dependencies]
+anyhow = "1.0.51"
+dprint-core = { version = "0.63.3", features = ["formatting"] }
+jsonc-parser = "0.23.0"
+serde = { version = "1.0.108", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+dprint-development = "0.9.5"
+pretty_assertions = "1.4.0"
+serde_json = { version = "1.0" }
