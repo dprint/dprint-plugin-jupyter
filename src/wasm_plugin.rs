@@ -47,12 +47,14 @@ impl SyncPluginHandler<Configuration> for JupyterPluginHandler {
 
   fn format(
     &mut self,
-    file_path: &Path,
+    _file_path: &Path,
     file_text: &str,
-    config: &Configuration,
-    format_with_host: impl FnMut(&Path, String, &ConfigKeyMap) -> FormatResult,
+    _config: &Configuration,
+    mut format_with_host: impl FnMut(&Path, String, &ConfigKeyMap) -> FormatResult,
   ) -> FormatResult {
-    super::format_text(file_path, file_text, config, format_with_host)
+    super::format_text(file_text, |path, text| {
+      format_with_host(path, text, &ConfigKeyMap::new())
+    })
   }
 }
 

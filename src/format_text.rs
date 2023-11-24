@@ -2,19 +2,15 @@ use std::borrow::Cow;
 use std::path::Path;
 use std::path::PathBuf;
 
-use crate::configuration::Configuration;
 use crate::text_changes::apply_text_changes;
 use crate::text_changes::TextChange;
 use anyhow::Result;
-use dprint_core::configuration::ConfigKeyMap;
 use jsonc_parser::CollectOptions;
 use jsonc_parser::ParseOptions;
 
 pub fn format_text(
-  _file_path: &Path,
   input_text: &str,
-  _config: &Configuration,
-  format_with_host: impl FnMut(&Path, String, &ConfigKeyMap) -> Result<Option<String>>,
+  format_with_host: impl FnMut(&Path, String) -> Result<Option<String>>,
 ) -> Result<Option<String>> {
   let parse_result = jsonc_parser::parse_to_ast(
     input_text,
@@ -38,7 +34,7 @@ pub fn format_text(
 fn format_root(
   input_text: &str,
   root_value: &jsonc_parser::ast::Value,
-  mut format_with_host: impl FnMut(&Path, String, &ConfigKeyMap) -> Result<Option<String>>,
+  mut format_with_host: impl FnMut(&Path, String) -> Result<Option<String>>,
 ) -> Option<String> {
   let root_obj = root_value.as_object()?;
   let maybe_default_language = get_metadata_language(root_obj);
@@ -61,7 +57,7 @@ fn get_cell_text_change(
   file_text: &str,
   cell: &jsonc_parser::ast::Value,
   maybe_default_language: Option<&str>,
-  format_with_host: &mut impl FnMut(&Path, String, &ConfigKeyMap) -> Result<Option<String>>,
+  format_with_host: &mut impl FnMut(&Path, String) -> Result<Option<String>>,
 ) -> Option<TextChange> {
   let cell = cell.as_object()?;
   let cell_language = get_cell_vscode_language_id(cell).or_else(|| {
@@ -74,7 +70,7 @@ fn get_cell_text_change(
   })?;
   let code_block = analyze_code_block(cell, file_text)?;
   let file_path = language_to_path(cell_language)?;
-  let formatted_text = format_with_host(&file_path, code_block.source, &ConfigKeyMap::new()).ok()??;
+  let formatted_text = format_with_host(&file_path, code_block.source).ok()??;
   // many plugins will add a final newline, but that doesn't look nice in notebooks, so trim it off
   let formatted_text = formatted_text.trim_end();
 
