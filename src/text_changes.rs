@@ -51,7 +51,7 @@ pub fn apply_text_changes(source: &str, mut changes: Vec<TextChange>) -> String 
     } else if range.start > last_index && last_index < source.len() {
       final_text.push_str(&source[last_index..std::cmp::min(source.len(), range.start)]);
     }
-    final_text.push_str(&new_text);
+    final_text.push_str(new_text);
     last_index = range.end;
   }
 
