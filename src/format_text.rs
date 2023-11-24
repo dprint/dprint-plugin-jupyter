@@ -138,7 +138,7 @@ fn build_json_text(formatted_text: &str, indent_text: &str) -> String {
         if is_last_line {
           Cow::Borrowed(line)
         } else {
-          Cow::Owned(format!("{}\n", line))
+          Cow::Owned(format!("{line}\n"))
         }
         .as_ref(),
       )
@@ -184,7 +184,7 @@ fn language_to_path(language: &str) -> Option<PathBuf> {
     "yaml" => Some("yml"),
     _ => None,
   };
-  ext.map(|ext| PathBuf::from(format!("code_block.{}", ext)))
+  ext.map(|ext| PathBuf::from(format!("code_block.{ext}")))
 }
 
 fn get_indent_text(file_text: &str, start_pos: usize) -> &str {

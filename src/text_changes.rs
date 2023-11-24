@@ -35,18 +35,18 @@ pub fn apply_text_changes(source: &str, mut changes: Vec<TextChange>) -> String 
   for (i, TextChange { range, new_text, .. }) in changes.iter().enumerate() {
     if range.start > range.end {
       panic!(
-        "Text change had start index {} greater than end index {}.\n\n{:?}",
-        range.start,
-        range.end,
-        &changes[0..i + 1],
+        "Text change had start index {start} greater than end index {end}.\n\n{changes:?}",
+        start = range.start,
+        end = range.end,
+        changes = &changes[0..i + 1],
       )
     }
     if range.start < last_index {
       panic!(
-        "Text changes were overlapping. Past index was {}, but new change had index {}.\n\n{:?}",
-        last_index,
-        range.start,
-        &changes[0..i + 1]
+        "Text changes were overlapping. Past index was {past}, but new change had index {new}.\n\n{changes:?}",
+        past = last_index,
+        new = range.start,
+        changes = &changes[0..i + 1]
       );
     } else if range.start > last_index && last_index < source.len() {
       final_text.push_str(&source[last_index..std::cmp::min(source.len(), range.start)]);
