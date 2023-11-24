@@ -39,13 +39,13 @@ fn format_root(
   let root_obj = root_value.as_object()?;
   let maybe_default_language = get_metadata_language(root_obj);
   let cells = root_value.as_object()?.get_array("cells")?;
-  let mut text_changes = Vec::new();
-  for element in &cells.elements {
-    let maybe_text_change = get_cell_text_change(input_text, element, maybe_default_language, &mut format_with_host);
-    if let Some(text_change) = maybe_text_change {
-      text_changes.push(text_change);
-    }
-  }
+
+  let text_changes: Vec<TextChange> = cells
+    .elements
+    .iter()
+    .filter_map(|element| get_cell_text_change(input_text, element, maybe_default_language, &mut format_with_host))
+    .collect();
+
   if text_changes.is_empty() {
     None
   } else {
@@ -105,6 +105,7 @@ fn analyze_code_block<'a>(cell: &jsonc_parser::ast::Object<'a>, file_text: &'a s
         }
         strings.push(&string_lit.value);
       }
+
       let mut text = String::with_capacity(strings.iter().map(|s| s.len()).sum::<usize>());
       for string in strings {
         text.push_str(string);
