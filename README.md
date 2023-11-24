@@ -22,7 +22,7 @@ dprint config add markdown
 dprint config add ruff
 ```
 
-If you find a code block isn't being formatted with a plugin, please verify it's not a syntax error, then please open an [issue](https://github.com/dprint/dprint-plugin-jupyter/issues) about adding support for that plugin (if you're interested in submitting a PR, it's potentially an easy contribution).
+If you find a code block isn't being formatted with a plugin, please verify it's not a syntax error. After, open an [issue](https://github.com/dprint/dprint-plugin-jupyter/issues) about adding support for that plugin (if you're interested in opening a PR, it's potentially an easy contribution).
 
 ## Configuration
 
