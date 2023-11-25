@@ -28,7 +28,10 @@ impl SyncPluginHandler<Configuration> for JupyterPluginHandler {
         version: version.clone(),
         config_key: "jupyter".to_string(),
         help_url: "https://dprint.dev/plugins/jupyter".to_string(),
-        config_schema_url: format!("https://plugins.dprint.dev/dprint/dprint-plugin-jupyter/{version}/schema.json"),
+        config_schema_url: format!(
+          "https://plugins.dprint.dev/dprint/dprint-plugin-jupyter/{}/schema.json",
+          version
+        ),
         update_url: Some("https://plugins.dprint.dev/dprint/dprint-plugin-jupyter/latest.json".to_string()),
       },
       file_matching: FileMatchingInfo {

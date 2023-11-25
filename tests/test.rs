@@ -31,19 +31,19 @@ fn test_specs() {
           |path, text| {
             if path.ends_with("code_block.py") {
               if !text.ends_with("_python") {
-                Ok(Some(format!("{text}_python")))
+                Ok(Some(format!("{}_python", text)))
               } else {
                 Ok(None)
               }
             } else if path.ends_with("code_block.md") {
               if !text.ends_with("_markdown") {
-                Ok(Some(format!("{text}_markdown")))
+                Ok(Some(format!("{}_markdown", text)))
               } else {
                 Ok(None)
               }
             } else if path.ends_with("code_block.ts") {
               if !text.ends_with("_typescript") {
-                Ok(Some(format!("{text}_typescript")))
+                Ok(Some(format!("{}_typescript", text)))
               } else {
                 Ok(None)
               }
