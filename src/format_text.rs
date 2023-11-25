@@ -8,22 +8,22 @@ use anyhow::Result;
 use jsonc_parser::CollectOptions;
 use jsonc_parser::ParseOptions;
 
-const COLLECT_OPTIONS: CollectOptions = CollectOptions {
-  comments: false,
-  tokens: false,
-};
-
-const PARSE_OPTIONS: ParseOptions = ParseOptions {
-  allow_comments: true,
-  allow_loose_object_property_names: true,
-  allow_trailing_commas: true,
-};
-
 pub fn format_text(
   input_text: &str,
   format_with_host: impl FnMut(&Path, String) -> Result<Option<String>>,
 ) -> Result<Option<String>> {
-  let parse_result = jsonc_parser::parse_to_ast(input_text, &COLLECT_OPTIONS, &PARSE_OPTIONS)?;
+  let parse_result = jsonc_parser::parse_to_ast(
+    input_text,
+    &CollectOptions {
+      comments: false,
+      tokens: false,
+    },
+    &ParseOptions {
+      allow_comments: true,
+      allow_loose_object_property_names: true,
+      allow_trailing_commas: true,
+    },
+  )?;
   let Some(root_value) = parse_result.value else {
     return Ok(None);
   };
