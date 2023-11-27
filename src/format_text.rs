@@ -28,7 +28,14 @@ pub fn format_text(
     return Ok(None);
   };
 
-  Ok(format_root(input_text, &root_value, format_with_host))
+  Ok(match format_root(input_text, &root_value, format_with_host) {
+    Some(text) => {
+      #[cfg(debug_assertions)]
+      validate_output_json(&text)?;
+      Some(text)
+    }
+    None => None,
+  })
 }
 
 fn format_root(
@@ -53,6 +60,29 @@ fn format_root(
   }
 }
 
+#[cfg(debug_assertions)]
+fn validate_output_json(text: &str) -> Result<()> {
+  // ensures the output is correct in debug mode
+  let result = jsonc_parser::parse_to_ast(
+    text,
+    &CollectOptions {
+      comments: false,
+      tokens: false,
+    },
+    &ParseOptions {
+      allow_comments: true,
+      allow_loose_object_property_names: false,
+      allow_trailing_commas: true,
+    },
+  );
+  match result {
+    Ok(_) => Ok(()),
+    Err(err) => {
+      anyhow::bail!("dprint-plugin-jupyter produced invalid json. Please open an issue with reproduction steps at https://github.com/dprint/dprint-plugin-jupyter/issues\n{:#}\n\n== TEXT ==\n{}", err, text);
+    }
+  }
+}
+
 fn get_cell_text_change(
   file_text: &str,
   cell: &jsonc_parser::ast::Value,
@@ -74,7 +104,11 @@ fn get_cell_text_change(
   // many plugins will add a final newline, but that doesn't look nice in notebooks, so trim it off
   let formatted_text = formatted_text.trim_end();
 
-  let new_text = build_json_text(formatted_text, code_block.indent_text);
+  let new_text = if code_block.is_array {
+    build_array_json_text(formatted_text, code_block.indent_text)
+  } else {
+    serde_json::to_string(&formatted_text).unwrap()
+  };
 
   Some(TextChange {
     range: code_block.replace_range,
@@ -83,6 +117,9 @@ fn get_cell_text_change(
 }
 
 struct CodeBlockText<'a> {
+  // Can be either a string or an array of strings.
+  // (https://github.com/jupyter/nbformat/blob/0708dd627d9ef81b12f231defb0d94dd7e80e3f4/nbformat/v4/nbformat.v4.5.schema.json#L460C7-L468C8)
+  is_array: bool,
   indent_text: &'a str,
   replace_range: std::ops::Range<usize>,
   source: String,
@@ -91,8 +128,10 @@ struct CodeBlockText<'a> {
 fn analyze_code_block<'a>(cell: &jsonc_parser::ast::Object<'a>, file_text: &'a str) -> Option<CodeBlockText<'a>> {
   let mut indent_text = "";
   let mut replace_range = std::ops::Range::default();
+  let mut is_array = false;
   let cell_source = match &cell.get("source")?.value {
     jsonc_parser::ast::Value::Array(items) => {
+      is_array = true;
       let mut strings = Vec::with_capacity(items.elements.len());
       for (i, element) in items.elements.iter().enumerate() {
         let string_lit = element.as_string_lit()?;
@@ -112,10 +151,14 @@ fn analyze_code_block<'a>(cell: &jsonc_parser::ast::Object<'a>, file_text: &'a s
       }
       text
     }
-    jsonc_parser::ast::Value::StringLit(string) => string.value.to_string(),
+    jsonc_parser::ast::Value::StringLit(string) => {
+      replace_range = string.range.start..string.range.end;
+      string.value.to_string()
+    }
     _ => return None,
   };
   Some(CodeBlockText {
+    is_array,
     indent_text,
     replace_range,
     source: cell_source,
@@ -123,7 +166,7 @@ fn analyze_code_block<'a>(cell: &jsonc_parser::ast::Object<'a>, file_text: &'a s
 }
 
 /// Turn the formatted text into a json array, split up by line breaks.
-fn build_json_text(formatted_text: &str, indent_text: &str) -> String {
+fn build_array_json_text(formatted_text: &str, indent_text: &str) -> String {
   let mut new_text = String::new();
   let mut current_end_index = 0;
   for (i, line) in formatted_text.split('\n').enumerate() {
