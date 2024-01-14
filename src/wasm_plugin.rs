@@ -48,13 +48,19 @@ impl SyncPluginHandler<Configuration> for JupyterPluginHandler {
   fn format(
     &mut self,
     _file_path: &Path,
-    file_text: &str,
+    file_bytes: Vec<u8>,
     _config: &Configuration,
-    mut format_with_host: impl FnMut(&Path, String, &ConfigKeyMap) -> FormatResult,
+    mut format_with_host: impl FnMut(&Path, Vec<u8>, &ConfigKeyMap) -> FormatResult,
   ) -> FormatResult {
-    super::format_text(file_text, |path, text| {
-      format_with_host(path, text, &ConfigKeyMap::new())
+    let file_text = String::from_utf8(file_bytes)?;
+    super::format_text(&file_text, |path, text| {
+      let maybe_bytes = format_with_host(path, text.into_bytes(), &ConfigKeyMap::new())?;
+      match maybe_bytes {
+        Some(bytes) => Ok(Some(String::from_utf8(bytes)?)),
+        None => Ok(None),
+      }
     })
+    .map(|maybe_file_text| maybe_file_text.map(|file_text| file_text.into_bytes()))
   }
 }
 
