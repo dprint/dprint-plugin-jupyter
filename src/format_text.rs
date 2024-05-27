@@ -12,6 +12,20 @@ pub fn format_text(
   input_text: &str,
   format_with_host: impl FnMut(&Path, String) -> Result<Option<String>>,
 ) -> Result<Option<String>> {
+  let had_bom = input_text.starts_with("\u{FEFF}");
+  let input_text = if had_bom { &input_text[3..] } else { input_text };
+  let result = format_inner(input_text, format_with_host)?;
+  if result.is_none() && had_bom {
+    Ok(Some(input_text.to_string()))
+  } else {
+    Ok(result)
+  }
+}
+
+fn format_inner(
+  input_text: &str,
+  format_with_host: impl FnMut(&Path, String) -> Result<Option<String>>,
+) -> Result<Option<String>> {
   let parse_result = jsonc_parser::parse_to_ast(
     input_text,
     &CollectOptions {
@@ -253,5 +267,49 @@ mod test {
     assert_eq!(get_indent_text("hello", 0), "");
     assert_eq!(get_indent_text("\nhello", 1), "");
     assert_eq!(get_indent_text("\nhello", 2), "");
+  }
+
+  #[test]
+  fn formats_with_bom() {
+    // no changes to code other than bom
+    {
+      let input_text = "\u{FEFF}{\"cells\":[{\"cell_type\":\"code\",\"source\":\"let x = 5;\"}]}";
+      let formatted_text = format_text(input_text, |_, text| Ok(Some(text))).unwrap().unwrap();
+      assert_eq!(
+        formatted_text,
+        "{\"cells\":[{\"cell_type\":\"code\",\"source\":\"let x = 5;\"}]}"
+      );
+    }
+    // other changes as well
+    let input_text = "\u{FEFF}{
+  \"cells\":[{
+    \"cell_type\":\"code\",
+    \"metadata\": {
+      \"vscode\": {
+       \"languageId\": \"typescript\"
+      }
+    },
+    \"source\": \"let x = 5;\"
+  }]
+}
+";
+    let formatted_text = format_text(input_text, |_, text| Ok(Some(format!("{}_formatted", text))))
+      .unwrap()
+      .unwrap();
+    assert_eq!(
+      formatted_text,
+      "{
+  \"cells\":[{
+    \"cell_type\":\"code\",
+    \"metadata\": {
+      \"vscode\": {
+       \"languageId\": \"typescript\"
+      }
+    },
+    \"source\": \"let x = 5;_formatted\"
+  }]
+}
+"
+    );
   }
 }
