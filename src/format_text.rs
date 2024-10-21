@@ -6,6 +6,7 @@ use crate::text_changes::apply_text_changes;
 use crate::text_changes::TextChange;
 use anyhow::Result;
 use jsonc_parser::CollectOptions;
+use jsonc_parser::CommentCollectionStrategy;
 use jsonc_parser::ParseOptions;
 
 pub fn format_text(
@@ -29,7 +30,7 @@ fn format_inner(
   let parse_result = jsonc_parser::parse_to_ast(
     input_text,
     &CollectOptions {
-      comments: false,
+      comments: CommentCollectionStrategy::Off,
       tokens: false,
     },
     &ParseOptions {
@@ -77,10 +78,11 @@ fn format_root(
 #[cfg(debug_assertions)]
 fn validate_output_json(text: &str) -> Result<()> {
   // ensures the output is correct in debug mode
+
   let result = jsonc_parser::parse_to_ast(
     text,
     &CollectOptions {
-      comments: false,
+      comments: CommentCollectionStrategy::Off,
       tokens: false,
     },
     &ParseOptions {
