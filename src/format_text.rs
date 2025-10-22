@@ -2,8 +2,8 @@ use std::borrow::Cow;
 use std::path::Path;
 use std::path::PathBuf;
 
-use crate::text_changes::apply_text_changes;
 use crate::text_changes::TextChange;
+use crate::text_changes::apply_text_changes;
 use anyhow::Result;
 use jsonc_parser::CollectOptions;
 use jsonc_parser::CommentCollectionStrategy;
@@ -94,7 +94,11 @@ fn validate_output_json(text: &str) -> Result<()> {
   match result {
     Ok(_) => Ok(()),
     Err(err) => {
-      anyhow::bail!("dprint-plugin-jupyter produced invalid json. Please open an issue with reproduction steps at https://github.com/dprint/dprint-plugin-jupyter/issues\n{:#}\n\n== TEXT ==\n{}", err, text);
+      anyhow::bail!(
+        "dprint-plugin-jupyter produced invalid json. Please open an issue with reproduction steps at https://github.com/dprint/dprint-plugin-jupyter/issues\n{:#}\n\n== TEXT ==\n{}",
+        err,
+        text
+      );
     }
   }
 }
