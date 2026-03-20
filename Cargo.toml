@@ -26,7 +26,7 @@ wasm = ["dprint-core/wasm"]
 [dependencies]
 anyhow = "1.0.51"
 dprint-core = { version = "0.67.4", features = ["formatting"] }
-jsonc-parser = "0.27.0"
+jsonc-parser = "0.32.0"
 serde = { version = "1.0.108", features = ["derive"] }
 serde_json = "1.0"
 
