@@ -37,6 +37,10 @@ fn format_inner(
       allow_comments: true,
       allow_loose_object_property_names: true,
       allow_trailing_commas: true,
+      allow_missing_commas: true,
+      allow_single_quoted_strings: true,
+      allow_hexadecimal_numbers: true,
+      allow_unary_plus_numbers: true,
     },
   )?;
   let Some(root_value) = parse_result.value else {
@@ -89,6 +93,10 @@ fn validate_output_json(text: &str) -> Result<()> {
       allow_comments: true,
       allow_loose_object_property_names: false,
       allow_trailing_commas: true,
+      allow_missing_commas: false,
+      allow_single_quoted_strings: false,
+      allow_hexadecimal_numbers: false,
+      allow_unary_plus_numbers: false,
     },
   );
   match result {
