@@ -1,4 +1,4 @@
-import { generateChangeLog } from "https://raw.githubusercontent.com/dprint/automation/0.9.0/changelog.ts";
+import { generateChangeLog } from "jsr:@dprint/automation@0.10.3";
 
 const version = Deno.args[0];
 const changelog = await generateChangeLog({
@@ -25,11 +25,11 @@ dprint config add typescript
 dprint config add markdown
 dprint config add ruff
 \`\`\`
+
+## JS Formatting API
+
+* [JS Formatter](https://github.com/dprint/js-formatter) - Browser/Deno and Node
+* [npm package](https://www.npmjs.com/package/@dprint/jupyter)
 `;
-
-// ## JS Formatting API
-
-// * [JS Formatter](https://github.com/dprint/js-formatter) - Browser/Deno and Node
-// * [npm package](https://www.npmjs.com/package/@dprint/jupyter)
 
 console.log(text);

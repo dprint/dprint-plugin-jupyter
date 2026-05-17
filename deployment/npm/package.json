@@ -1,0 +1,30 @@
+{
+  "name": "@dprint/jupyter",
+  "version": "0.0.0",
+  "description": "Wasm module for dprint-plugin-jupyter.",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dprint/dprint-plugin-jupyter.git"
+  },
+  "keywords": [
+    "jupyter",
+    "notebook",
+    "ipynb",
+    "formatter",
+    "dprint"
+  ],
+  "author": "David Sherret",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dprint/dprint-plugin-jupyter/issues"
+  },
+  "homepage": "https://github.com/dprint/dprint-plugin-jupyter#readme",
+  "scripts": {
+    "test": "node index.test.js"
+  },
+  "devDependencies": {
+    "@dprint/formatter": "~0.4.0"
+  }
+}
