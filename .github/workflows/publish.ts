@@ -3,7 +3,7 @@ import { job, step, workflow } from "jsr:@david/gagen@^0.5.0";
 
 const auth = step({
   id: "auth",
-  uses: "rust-lang/crates-io-auth-action@v1",
+  uses: "rust-lang/crates-io-auth-action@v1.0.5",
   outputs: ["token"],
 });
 
