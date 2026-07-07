@@ -52,6 +52,7 @@ fn test_specs() {
             }
           },
         )
+        .map_err(Into::into)
       }
     },
     move |_file_path, _file_text, _spec_config| panic!("Plugin does not support dprint-core tracing."),

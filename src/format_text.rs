@@ -4,15 +4,33 @@ use std::path::PathBuf;
 
 use crate::text_changes::TextChange;
 use crate::text_changes::apply_text_changes;
-use anyhow::Result;
 use jsonc_parser::CollectOptions;
 use jsonc_parser::CommentCollectionStrategy;
 use jsonc_parser::ParseOptions;
+use jsonc_parser::errors::ParseError;
+
+/// Error that occurred while formatting a Jupyter notebook.
+#[derive(Debug, thiserror::Error)]
+pub enum FormatTextError {
+  /// The notebook could not be parsed as JSON.
+  #[error(transparent)]
+  Parse(#[from] ParseError),
+  /// The formatter produced invalid JSON (only checked in debug builds).
+  #[cfg(debug_assertions)]
+  #[error(
+    "dprint-plugin-jupyter produced invalid json. Please open an issue with reproduction steps at https://github.com/dprint/dprint-plugin-jupyter/issues\n{error}\n\n== TEXT ==\n{text}"
+  )]
+  InvalidOutput { error: ParseError, text: String },
+}
+
+/// Result returned by the host formatting callback. Any error it returns causes
+/// the cell to be left unformatted, so it may be any error type.
+type HostFormatResult = std::result::Result<Option<String>, Box<dyn std::error::Error + Send + Sync + 'static>>;
 
 pub fn format_text(
   input_text: &str,
-  format_with_host: impl FnMut(&Path, String) -> Result<Option<String>>,
-) -> Result<Option<String>> {
+  format_with_host: impl FnMut(&Path, String) -> HostFormatResult,
+) -> Result<Option<String>, FormatTextError> {
   let had_bom = input_text.starts_with("\u{FEFF}");
   let input_text = if had_bom { &input_text[3..] } else { input_text };
   let result = format_inner(input_text, format_with_host)?;
@@ -25,8 +43,8 @@ pub fn format_text(
 
 fn format_inner(
   input_text: &str,
-  format_with_host: impl FnMut(&Path, String) -> Result<Option<String>>,
-) -> Result<Option<String>> {
+  format_with_host: impl FnMut(&Path, String) -> HostFormatResult,
+) -> Result<Option<String>, FormatTextError> {
   let parse_result = jsonc_parser::parse_to_ast(
     input_text,
     &CollectOptions {
@@ -60,7 +78,7 @@ fn format_inner(
 fn format_root(
   input_text: &str,
   root_value: &jsonc_parser::ast::Value,
-  mut format_with_host: impl FnMut(&Path, String) -> Result<Option<String>>,
+  mut format_with_host: impl FnMut(&Path, String) -> HostFormatResult,
 ) -> Option<String> {
   let root_obj = root_value.as_object()?;
   let maybe_default_language = get_metadata_language(root_obj);
@@ -80,7 +98,7 @@ fn format_root(
 }
 
 #[cfg(debug_assertions)]
-fn validate_output_json(text: &str) -> Result<()> {
+fn validate_output_json(text: &str) -> Result<(), FormatTextError> {
   // ensures the output is correct in debug mode
 
   let result = jsonc_parser::parse_to_ast(
@@ -101,13 +119,10 @@ fn validate_output_json(text: &str) -> Result<()> {
   );
   match result {
     Ok(_) => Ok(()),
-    Err(err) => {
-      anyhow::bail!(
-        "dprint-plugin-jupyter produced invalid json. Please open an issue with reproduction steps at https://github.com/dprint/dprint-plugin-jupyter/issues\n{:#}\n\n== TEXT ==\n{}",
-        err,
-        text
-      );
-    }
+    Err(error) => Err(FormatTextError::InvalidOutput {
+      error,
+      text: text.to_string(),
+    }),
   }
 }
 
@@ -115,7 +130,7 @@ fn get_cell_text_change(
   file_text: &str,
   cell: &jsonc_parser::ast::Value,
   maybe_default_language: Option<&str>,
-  format_with_host: &mut impl FnMut(&Path, String) -> Result<Option<String>>,
+  format_with_host: &mut impl FnMut(&Path, String) -> HostFormatResult,
 ) -> Option<TextChange> {
   let cell = cell.as_object()?;
   let cell_language = get_cell_vscode_language_id(cell).or_else(|| {

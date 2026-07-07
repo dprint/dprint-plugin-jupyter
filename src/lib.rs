@@ -2,6 +2,7 @@ pub mod configuration;
 mod format_text;
 mod text_changes;
 
+pub use format_text::FormatTextError;
 pub use format_text::format_text;
 
 #[cfg(feature = "wasm")]

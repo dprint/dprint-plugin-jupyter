@@ -7,6 +7,7 @@ use dprint_core::generate_plugin_code;
 use dprint_core::plugins::CheckConfigUpdatesMessage;
 use dprint_core::plugins::ConfigChange;
 use dprint_core::plugins::FileMatchingInfo;
+use dprint_core::plugins::FormatError;
 use dprint_core::plugins::FormatRange;
 use dprint_core::plugins::FormatResult;
 use dprint_core::plugins::PluginInfo;
@@ -49,7 +50,7 @@ impl SyncPluginHandler<Configuration> for JupyterPluginHandler {
     }
   }
 
-  fn check_config_updates(&self, _message: CheckConfigUpdatesMessage) -> Result<Vec<ConfigChange>, anyhow::Error> {
+  fn check_config_updates(&self, _message: CheckConfigUpdatesMessage) -> Result<Vec<ConfigChange>, FormatError> {
     Ok(Vec::new())
   }
 
@@ -78,6 +79,7 @@ impl SyncPluginHandler<Configuration> for JupyterPluginHandler {
       }
     })
     .map(|maybe_file_text| maybe_file_text.map(|file_text| file_text.into_bytes()))
+    .map_err(FormatError::new)
   }
 }
 
