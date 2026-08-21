@@ -12,8 +12,6 @@ Then in your project's directory with a dprint.json file, run:
 
 ```shellsession
 dprint add jupyter
-# or install from npm
-dprint add npm:@dprint/jupyter
 ```
 
 Then add some additional formatting plugins to format the code blocks with. For example:
