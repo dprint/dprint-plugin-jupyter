@@ -1,6 +1,6 @@
 # dprint-plugin-jupyter
 
-[![](https://img.shields.io/crates/v/dprint-plugin-jupyter.svg)](https://crates.io/crates/dprint-plugin-jupyter) [![CI](https://github.com/dprint/dprint-plugin-jupyter/workflows/CI/badge.svg)](https://github.com/dprint/dprint-plugin-jupyter/actions?query=workflow%3ACI)
+[![](https://img.shields.io/crates/v/dprint-plugin-jupyter.svg)](https://crates.io/crates/dprint-plugin-jupyter) [![npm version](https://img.shields.io/npm/v/@dprint/jupyter.svg)](https://www.npmjs.com/package/@dprint/jupyter) [![CI](https://github.com/dprint/dprint-plugin-jupyter/workflows/CI/badge.svg)](https://github.com/dprint/dprint-plugin-jupyter/actions?query=workflow%3ACI)
 
 Formats code blocks in Jupyter notebook files (`.ipynb`) using dprint plugins.
 
