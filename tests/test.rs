@@ -47,6 +47,18 @@ fn test_specs() {
               } else {
                 Ok(None)
               }
+            } else if path.ends_with("code_block.tsx") {
+              if !text.ends_with("_tsx") {
+                Ok(Some(format!("{}_tsx", text)))
+              } else {
+                Ok(None)
+              }
+            } else if path.ends_with("code_block.sql") {
+              if !text.ends_with("_sql") {
+                Ok(Some(format!("{}_sql", text)))
+              } else {
+                Ok(None)
+              }
             } else {
               Ok(None)
             }

@@ -1,0 +1,145 @@
+== should format cells using the language id as the extension when not a known language ==
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "vscode": {
+     "languageId": "typescriptreact"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "code block 1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "vscode": {
+     "languageId": "SQL"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "code block 2"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "vscode": {
+     "languageId": "plaintext"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "code block 3"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "vscode": {
+     "languageId": "objective-c"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "code block 4"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "code block 5"
+   ]
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "sql"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "vscode": {
+     "languageId": "typescriptreact"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "code block 1_tsx"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "vscode": {
+     "languageId": "SQL"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "code block 2_sql"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "vscode": {
+     "languageId": "plaintext"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "code block 3"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "vscode": {
+     "languageId": "objective-c"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "code block 4"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "code block 5_sql"
+   ]
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "sql"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
