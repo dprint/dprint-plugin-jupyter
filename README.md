@@ -22,7 +22,7 @@ dprint add markdown
 dprint add ruff
 ```
 
-If you find a code block isn't being formatted with a plugin, please verify it's not a syntax error. After, open an [issue](https://github.com/dprint/dprint-plugin-jupyter/issues) about adding support for that plugin (if you're interested in opening a PR, it's potentially an easy contribution).
+Each code block is formatted with whichever plugin handles its language's file extension (ex. a `python` cell is formatted as a `.py` file and a `sql` cell as a `.sql` file). If you find a code block isn't being formatted with a plugin, please verify it's not a syntax error. After, open an [issue](https://github.com/dprint/dprint-plugin-jupyter/issues) about mapping that cell's language to the plugin's file extension (if you're interested in opening a PR, it's potentially an easy contribution).
 
 ## Configuration
 

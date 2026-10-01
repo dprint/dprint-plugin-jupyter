@@ -246,31 +246,64 @@ fn get_cell_vscode_language_id<'a>(cell: &'a jsonc_parser::ast::Object<'a>) -> O
   Some(&cell_language_info.get_string("languageId")?.value)
 }
 
+/// Gets the virtual file path used to format a cell's code with the host.
+///
+/// The dprint CLI selects the plugin based on this path, so a cell is formatted
+/// whenever a plugin handles the path's extension. When no plugin does, the host
+/// leaves the text as-is and the cell stays unformatted.
 fn language_to_path(language: &str) -> Option<PathBuf> {
-  let ext = match language.to_lowercase().as_str() {
-    "bash" => Some("sh"),
-    "c++" => Some("cpp"),
-    "css" => Some("css"),
-    "csharp" => Some("cs"),
-    "html" => Some("html"),
-    "go" => Some("go"),
-    "kotlin" => Some("kt"),
-    "json" => Some("json"),
-    "julia" => Some("jl"),
-    "markdown" => Some("md"),
-    "typescript" => Some("ts"),
-    "javascript" => Some("js"),
-    "perl" => Some("perl"),
-    "php" => Some("php"),
-    "python" | "python3" => Some("py"),
-    "r" => Some("r"),
-    "ruby" => Some("rb"),
-    "scala" => Some("scala"),
-    "sql" => Some("sql"),
-    "yaml" => Some("yml"),
-    _ => None,
+  let language = language.to_ascii_lowercase();
+  let ext = match known_language_extension(&language) {
+    Some(ext) => ext,
+    // fall back to the language id itself as the extension (ex. sql, toml, go)
+    None if is_fallback_extension(&language) => &language,
+    None => return None,
   };
-  ext.map(|ext| PathBuf::from(format!("code_block.{}", ext)))
+  Some(PathBuf::from(format!("code_block.{}", ext)))
+}
+
+/// Gets the file extension for languages (VS Code language ids and Jupyter
+/// kernel language names) whose conventional extension differs from the id.
+fn known_language_extension(language: &str) -> Option<&'static str> {
+  Some(match language {
+    "bash" | "sh" | "shell" | "shellscript" => "sh",
+    "c#" | "csharp" => "cs",
+    "c++" | "cpp" => "cpp",
+    "clojure" => "clj",
+    "coffeescript" => "coffee",
+    "elixir" => "ex",
+    "erlang" => "erl",
+    "f#" | "fsharp" => "fs",
+    "handlebars" => "hbs",
+    "haskell" => "hs",
+    "javascript" => "js",
+    "javascriptreact" => "jsx",
+    "julia" => "jl",
+    "kotlin" => "kt",
+    "latex" => "tex",
+    "markdown" => "md",
+    "nushell" => "nu",
+    "ocaml" => "ml",
+    "perl" => "pl",
+    "powershell" => "ps1",
+    "proto3" | "protobuf" => "proto",
+    "python" | "python3" => "py",
+    "restructuredtext" => "rst",
+    "ruby" => "rb",
+    "rust" => "rs",
+    "terraform" => "tf",
+    "typescript" => "ts",
+    "typescriptreact" => "tsx",
+    "yaml" => "yml",
+    _ => return None,
+  })
+}
+
+fn is_fallback_extension(language: &str) -> bool {
+  !language.is_empty()
+    && language.chars().all(|c| c.is_ascii_alphanumeric())
+    // never format a cell as a notebook, which would recurse into this plugin
+    && language != "ipynb"
 }
 
 fn get_indent_text(file_text: &str, start_pos: usize) -> &str {
@@ -296,6 +329,56 @@ mod test {
     assert_eq!(get_indent_text("hello", 0), "");
     assert_eq!(get_indent_text("\nhello", 1), "");
     assert_eq!(get_indent_text("\nhello", 2), "");
+  }
+
+  #[test]
+  fn test_language_to_path() {
+    fn assert_path(language: &str, expected: Option<&str>) {
+      assert_eq!(
+        language_to_path(language),
+        expected.map(PathBuf::from),
+        "language: {}",
+        language
+      );
+    }
+
+    // known languages whose extension differs from the language id
+    assert_path("python", Some("code_block.py"));
+    assert_path("Python3", Some("code_block.py"));
+    assert_path("typescript", Some("code_block.ts"));
+    assert_path("typescriptreact", Some("code_block.tsx"));
+    assert_path("javascript", Some("code_block.js"));
+    assert_path("javascriptreact", Some("code_block.jsx"));
+    assert_path("markdown", Some("code_block.md"));
+    assert_path("rust", Some("code_block.rs"));
+    assert_path("c++", Some("code_block.cpp"));
+    assert_path("c#", Some("code_block.cs"));
+    assert_path("csharp", Some("code_block.cs"));
+    assert_path("f#", Some("code_block.fs"));
+    assert_path("shellscript", Some("code_block.sh"));
+    assert_path("bash", Some("code_block.sh"));
+    assert_path("powershell", Some("code_block.ps1"));
+    assert_path("yaml", Some("code_block.yml"));
+    assert_path("perl", Some("code_block.pl"));
+    assert_path("terraform", Some("code_block.tf"));
+
+    // other languages use the language id as the extension
+    assert_path("sql", Some("code_block.sql"));
+    assert_path("SQL", Some("code_block.sql"));
+    assert_path("toml", Some("code_block.toml"));
+    assert_path("css", Some("code_block.css"));
+    assert_path("json", Some("code_block.json"));
+    assert_path("jsonc", Some("code_block.jsonc"));
+    assert_path("go", Some("code_block.go"));
+    assert_path("dockerfile", Some("code_block.dockerfile"));
+
+    // languages that can't be used as an extension
+    assert_path("", None);
+    assert_path("objective-c", None);
+    assert_path("some.lang", None);
+    assert_path("../lang", None);
+    assert_path("lang ", None);
+    assert_path("ipynb", None);
   }
 
   #[test]
