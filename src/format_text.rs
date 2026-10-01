@@ -59,6 +59,9 @@ fn format_inner(
       allow_single_quoted_strings: true,
       allow_hexadecimal_numbers: true,
       allow_unary_plus_numbers: true,
+      allow_bare_decimal_point_numbers: true,
+      allow_non_finite_numbers: true,
+      allow_extended_string_escapes: true,
     },
   )?;
   let Some(root_value) = parse_result.value else {
@@ -115,6 +118,10 @@ fn validate_output_json(text: &str) -> Result<(), FormatTextError> {
       allow_single_quoted_strings: false,
       allow_hexadecimal_numbers: false,
       allow_unary_plus_numbers: false,
+      allow_bare_decimal_point_numbers: false,
+      // python writes NaN and Infinity into cell outputs
+      allow_non_finite_numbers: true,
+      allow_extended_string_escapes: false,
     },
   );
   match result {
@@ -422,6 +429,18 @@ mod test {
   }]
 }
 "
+    );
+  }
+
+  #[test]
+  fn formats_with_non_finite_numbers() {
+    let input_text = "{\"cells\":[{\"cell_type\":\"code\",\"metadata\":{\"vscode\":{\"languageId\":\"typescript\"}},\"outputs\":[NaN,Infinity,-Infinity],\"source\":\"let x = 5;\"}]}";
+    let formatted_text = format_text(input_text, |_, text| Ok(Some(format!("{}_formatted", text))))
+      .unwrap()
+      .unwrap();
+    assert_eq!(
+      formatted_text,
+      "{\"cells\":[{\"cell_type\":\"code\",\"metadata\":{\"vscode\":{\"languageId\":\"typescript\"}},\"outputs\":[NaN,Infinity,-Infinity],\"source\":\"let x = 5;_formatted\"}]}"
     );
   }
 }

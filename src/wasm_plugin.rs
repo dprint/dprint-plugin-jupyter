@@ -31,6 +31,7 @@ impl SyncPluginHandler<Configuration> for JupyterPluginHandler {
       file_matching: FileMatchingInfo {
         file_extensions: vec!["ipynb".to_string()],
         file_names: vec![],
+        additive: false,
       },
     }
   }
