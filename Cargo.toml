@@ -24,8 +24,8 @@ panic = "abort"
 wasm = ["dprint-core/wasm"]
 
 [dependencies]
-dprint-core = { version = "0.69.1", features = ["formatting"] }
-jsonc-parser = "0.33.0"
+dprint-core = { version = "0.70.0", features = ["formatting"] }
+jsonc-parser = "0.34.0"
 serde = { version = "1.0.108", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2"
