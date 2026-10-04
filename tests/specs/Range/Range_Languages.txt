@@ -1,0 +1,355 @@
+== should format a code cell with the notebook language ==
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "source": "code [||]block 1"
+  },
+  {
+   "cell_type": "code",
+   "source": "code block 2"
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ }
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "source": "code [||]block 1_python"
+  },
+  {
+   "cell_type": "code",
+   "source": "code block 2"
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ }
+}
+
+== should format a code cell with its own language over the notebook language ==
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "typescriptreact"
+    }
+   },
+   "source": "code [||]block 1"
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ }
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "typescriptreact"
+    }
+   },
+   "source": "code [||]block 1_tsx"
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ }
+}
+
+== should format a cell using the language id as the extension ==
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "sql"
+    }
+   },
+   "source": "code [||]block 1"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "sql"
+    }
+   },
+   "source": "code [||]block 1_sql"
+  }
+ ]
+}
+
+== should format a markdown cell without a notebook language ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code [||]block 1"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code [||]block 1_markdown"
+  }
+ ]
+}
+
+== should not change a code cell without a language ==
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "source": "code [||]block 1"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "source": "code [||]block 1"
+  }
+ ]
+}
+
+== should not change a raw cell ==
+{
+ "cells": [
+  {
+   "cell_type": "raw",
+   "source": "code [||]block 1"
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ }
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "raw",
+   "source": "code [||]block 1"
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ }
+}
+
+== should not change a cell with an unknown or missing cell type ==
+{
+ "cells": [
+  [|{
+   "cell_type": "other",
+   "source": "code block 1"
+  },
+  {
+   "source": "code block 2"
+  },
+  {
+   "cell_type": 1,
+   "source": "code block 3"
+  }|]
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ }
+}
+
+[expect]
+{
+ "cells": [
+  [|{
+   "cell_type": "other",
+   "source": "code block 1"
+  },
+  {
+   "source": "code block 2"
+  },
+  {
+   "cell_type": 1,
+   "source": "code block 3"
+  }|]
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ }
+}
+
+== should only format the cells within the range that can be formatted ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code [|block 1"
+  },
+  {
+   "cell_type": "raw",
+   "source": "code block 2"
+  },
+  {
+   "cell_type": "code",
+   "source": "code block 3"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "objective-c"
+    }
+   },
+   "source": "code block 4"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "ipynb"
+    }
+   },
+   "source": "code block 5"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "go"
+    }
+   },
+   "source": "code block 6"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "error"
+    }
+   },
+   "source": "code block 7"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "typescript"
+    }
+   },
+   "source": "code block|] 8"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 9"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code [|block 1_markdown"
+  },
+  {
+   "cell_type": "raw",
+   "source": "code block 2"
+  },
+  {
+   "cell_type": "code",
+   "source": "code block 3"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "objective-c"
+    }
+   },
+   "source": "code block 4"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "ipynb"
+    }
+   },
+   "source": "code block 5"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "go"
+    }
+   },
+   "source": "code block 6"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "error"
+    }
+   },
+   "source": "code block 7"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "typescript"
+    }
+   },
+   "source": "code block|] 8_typescript"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 9"
+  }
+ ]
+}

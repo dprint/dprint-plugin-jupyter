@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use super::configuration::Configuration;
 use super::configuration::resolve_config;
 
@@ -62,13 +64,13 @@ impl SyncPluginHandler<Configuration> for JupyterPluginHandler {
   fn format(
     &mut self,
     request: SyncFormatRequest<Configuration>,
-    _format_with_host: impl FnMut(SyncHostFormatRequest) -> FormatResult,
+    mut format_with_host: impl FnMut(SyncHostFormatRequest) -> FormatResult,
   ) -> FormatResult {
     let file_text = String::from_utf8(request.file_bytes)?;
-    super::format_text(&file_text, |path, text| {
+    let format_cell_text = |path: &Path, text: String| {
       let additional_config = ConfigKeyMap::new();
       let request = SyncHostFormatRequest {
-        file_path: &path,
+        file_path: path,
         file_bytes: text.as_bytes(),
         range: FormatRange::None,
         override_config: &additional_config,
@@ -78,7 +80,11 @@ impl SyncPluginHandler<Configuration> for JupyterPluginHandler {
         Some(bytes) => Ok(Some(String::from_utf8(bytes)?)),
         None => Ok(None),
       }
-    })
+    };
+    match request.range {
+      Some(range) => super::format_text_range(&file_text, range, format_cell_text),
+      None => super::format_text(&file_text, format_cell_text),
+    }
     .map(|maybe_file_text| maybe_file_text.map(|file_text| file_text.into_bytes()))
     .map_err(FormatError::new)
   }

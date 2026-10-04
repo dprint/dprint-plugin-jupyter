@@ -1,0 +1,637 @@
+== should only format the cell the range is in ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "code block 1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {},
+   "source": [
+    "code [|block|] 2"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "code block 3"
+   ]
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ }
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "code block 1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {},
+   "source": [
+    "code [|block|] 2_python"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "code block 3"
+   ]
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ }
+}
+
+== should format every cell the range touches ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code [|block 2"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 3"
+  },
+  {
+   "cell_type"|]: "markdown",
+   "source": "code block 4"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 5"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code [|block 2_markdown"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 3_markdown"
+  },
+  {
+   "cell_type"|]: "markdown",
+   "source": "code block 4_markdown"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 5"
+  }
+ ]
+}
+
+== should format the cell when the range is in its cell type ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "mark[|do|]wn",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "mark[|do|]wn",
+   "source": "code block 2_markdown"
+  }
+ ]
+}
+
+== should format the cell when the range is in its metadata ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "language[|Id": "type|]script"
+    }
+   },
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "language[|Id": "type|]script"
+    }
+   },
+   "source": "code block 2_typescript"
+  }
+ ]
+}
+
+== should format the cell when the range is in its outputs ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "typescript"
+    }
+   },
+   "outputs": [|[]|],
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "typescript"
+    }
+   },
+   "outputs": [|[]|],
+   "source": "code block 2_typescript"
+  }
+ ]
+}
+
+== should only format the cell and not an output of it that looks like a cell ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "typescript"
+    }
+   },
+   "outputs": [
+    {
+     "cell_type": "markdown",
+     "source": "out[||]put"
+    }
+   ],
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "vscode": {
+     "languageId": "typescript"
+    }
+   },
+   "outputs": [
+    {
+     "cell_type": "markdown",
+     "source": "out[||]put"
+    }
+   ],
+   "source": "code block 2_typescript"
+  }
+ ]
+}
+
+== should format the cell at a cursor in its source ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code [||]block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code [||]block 2_markdown"
+  }
+ ]
+}
+
+== should format the cell at a cursor before its opening brace ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  [||]{
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  [||]{
+   "cell_type": "markdown",
+   "source": "code block 2_markdown"
+  }
+ ]
+}
+
+== should format the cell at a cursor after its closing brace ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }[||],
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1_markdown"
+  }[||],
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+== should not change anything for a cursor between the cells ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },[||]
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },[||]
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+== should not change anything for a range that is all of the text between two cells ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }[|,
+  |]{
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }[|,
+  |]{
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+== should not format a cell the range ends at the start of ==
+{
+ "cells": [
+  [|{
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  |]{
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  [|{
+   "cell_type": "markdown",
+   "source": "code block 1_markdown"
+  },
+  |]{
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+== should not format a cell the range starts at the end of ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }[|,
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }|]
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }[|,
+  {
+   "cell_type": "markdown",
+   "source": "code block 2_markdown"
+  }|]
+ ]
+}
+
+== should format a cell the range only touches the opening brace of ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  [|{|]
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  [|{|]
+   "cell_type": "markdown",
+   "source": "code block 2_markdown"
+  }
+ ]
+}
+
+== should format a cell the range only touches the closing brace of ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  [|}|],
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1_markdown"
+  [|}|],
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+== should format the first cell for a range from the start of the file into it ==
+[|{
+ "cells": [
+  {
+   "cell_type"|]: "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+[|{
+ "cells": [
+  {
+   "cell_type"|]: "markdown",
+   "source": "code block 1_markdown"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+== should format the last cell for a range from it to the end of the file ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code [|block 2"
+  }
+ ],
+ "nbformat": 4
+}|]
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code [|block 2_markdown"
+  }
+ ],
+ "nbformat": 4
+}|]
+
+== should format all the cells when the range is the cells array ==
+{
+ "cells": [|[
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]|]
+}
+
+[expect]
+{
+ "cells": [|[
+  {
+   "cell_type": "markdown",
+   "source": "code block 1_markdown"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 2_markdown"
+  }
+ ]|]
+}
+
+== should format all the cells when the range is the whole file ==
+[|{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}|]
+
+[expect]
+[|{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1_markdown"
+  },
+  {
+   "cell_type": "markdown",
+   "source": "code block 2_markdown"
+  }
+ ]
+}|]

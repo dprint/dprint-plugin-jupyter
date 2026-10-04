@@ -1,0 +1,171 @@
+== should format a cell in a notebook on a single line ==
+{"cells":[{"cell_type":"markdown","source":"code block 1"},{"cell_type":"markdown","source":["code [||]block 2"]},{"cell_type":"markdown","source":"code block 3"}]}
+
+[expect]
+{"cells":[{"cell_type":"markdown","source":"code block 1"},{"cell_type":"markdown","source":["code [||]block 2_markdown"]},{"cell_type":"markdown","source":"code block 3"}]}
+
+== should format a cell in a notebook with comments and trailing commas ==
+// notebook
+{
+ "cells": [
+  /* first */
+  {
+   "cell_type": "markdown", // type
+   "source": [
+    "code block 1", // source
+   ],
+  },
+  // second
+  {
+   "cell_type": "markdown",
+   "source": [
+    "code [||]block 2", // source
+   ],
+  },
+ ],
+}
+
+[expect]
+// notebook
+{
+ "cells": [
+  /* first */
+  {
+   "cell_type": "markdown", // type
+   "source": [
+    "code block 1", // source
+   ],
+  },
+  // second
+  {
+   "cell_type": "markdown",
+   "source": [
+    "code [||]block 2_markdown", // source
+   ],
+  },
+ ],
+}
+
+== should format the cell after a comment the range is in ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   // comm[||]ent
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  {
+   // comm[||]ent
+   "cell_type": "markdown",
+   "source": "code block 2_markdown"
+  }
+ ]
+}
+
+== should not change anything for a range in a comment between the cells ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  // comm[|en|]t
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  },
+  // comm[|en|]t
+  {
+   "cell_type": "markdown",
+   "source": "code block 2"
+  }
+ ]
+}
+
+== should keep the properties of the cell in their order ==
+{
+ "cells": [
+  {
+   "source": "code [||]block 1",
+   "outputs": [],
+   "metadata": {
+    "vscode": {
+     "languageId": "typescript"
+    }
+   },
+   "cell_type": "code"
+  }
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "source": "code [||]block 1_typescript",
+   "outputs": [],
+   "metadata": {
+    "vscode": {
+     "languageId": "typescript"
+    }
+   },
+   "cell_type": "code"
+  }
+ ]
+}
+
+== should format a cell when the cells are not the first property ==
+{
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "cells": [
+  {
+   "cell_type": "code",
+   "source": "code [||]block 1"
+  }
+ ]
+}
+
+[expect]
+{
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "cells": [
+  {
+   "cell_type": "code",
+   "source": "code [||]block 1_python"
+  }
+ ]
+}

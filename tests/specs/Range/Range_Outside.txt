@@ -1,0 +1,227 @@
+== should not change anything for a range in the notebook metadata ==
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "source": "code block 1"
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   [|"name": "python"|]
+  }
+ }
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "source": "code block 1"
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   [|"name": "python"|]
+  }
+ }
+}
+
+== should not change anything for a range in the notebook format properties ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }
+ ],
+ "nbformat": [|4,
+ "nbformat_minor": 2|]
+}
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }
+ ],
+ "nbformat": [|4,
+ "nbformat_minor": 2|]
+}
+
+== should not change anything for a range before the first cell ==
+{
+ [|"cells": [
+  |]{
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }
+ ]
+}
+
+[expect]
+{
+ [|"cells": [
+  |]{
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }
+ ]
+}
+
+== should not change anything for a range after the last cell ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }[|
+ ]
+}|]
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }[|
+ ]
+}|]
+
+== should not change anything for a cursor at the start of the file ==
+[||]{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }
+ ]
+}
+
+[expect]
+[||]{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }
+ ]
+}
+
+== should not change anything for a cursor at the end of the file ==
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }
+ ]
+}[||]
+
+[expect]
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }
+ ]
+}[||]
+
+== should not change anything for a cursor in an empty cells array ==
+{
+ "cells": [[||]],
+ "nbformat": 4
+}
+
+[expect]
+{
+ "cells": [[||]],
+ "nbformat": 4
+}
+
+== should not change anything when there are no cells ==
+{
+ "metadata": {
+  "language_info": {
+   "name": [|"python"|]
+  }
+ }
+}
+
+[expect]
+{
+ "metadata": {
+  "language_info": {
+   "name": [|"python"|]
+  }
+ }
+}
+
+== should not change anything when the cells are not an array ==
+{
+ "cells": {
+  "cell_type": "markdown",
+  "source": "code [|block|] 1"
+ }
+}
+
+[expect]
+{
+ "cells": {
+  "cell_type": "markdown",
+  "source": "code [|block|] 1"
+ }
+}
+
+== should not change anything when the notebook is not an object ==
+[
+ {
+  "cell_type": "markdown",
+  "source": "code [|block|] 1"
+ }
+]
+
+[expect]
+[
+ {
+  "cell_type": "markdown",
+  "source": "code [|block|] 1"
+ }
+]
+
+== should skip the cells that are not objects ==
+{
+ "cells": [
+  [|null,
+  1,
+  "code block",
+  [
+   "code block"
+  ],
+  {
+   "cell_type": "markdown",
+   "source": "code block 1"
+  }|]
+ ]
+}
+
+[expect]
+{
+ "cells": [
+  [|null,
+  1,
+  "code block",
+  [
+   "code block"
+  ],
+  {
+   "cell_type": "markdown",
+   "source": "code block 1_markdown"
+  }|]
+ ]
+}
