@@ -31,6 +31,6 @@ serde_json = "1.0"
 thiserror = "2"
 
 [dev-dependencies]
-dprint-development = "0.9.5"
+dprint-development = "0.12.1"
 pretty_assertions = "1.4.0"
 serde_json = { version = "1.0" }

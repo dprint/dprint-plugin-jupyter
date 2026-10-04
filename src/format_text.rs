@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::ops::Range;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -7,6 +8,7 @@ use crate::text_changes::apply_text_changes;
 use jsonc_parser::CollectOptions;
 use jsonc_parser::CommentCollectionStrategy;
 use jsonc_parser::ParseOptions;
+use jsonc_parser::common::Ranged;
 use jsonc_parser::errors::ParseError;
 
 /// Error that occurred while formatting a Jupyter notebook.
@@ -33,7 +35,7 @@ pub fn format_text(
 ) -> Result<Option<String>, FormatTextError> {
   let had_bom = input_text.starts_with("\u{FEFF}");
   let input_text = if had_bom { &input_text[3..] } else { input_text };
-  let result = format_inner(input_text, format_with_host)?;
+  let result = format_inner(input_text, None, format_with_host)?;
   if result.is_none() && had_bom {
     Ok(Some(input_text.to_string()))
   } else {
@@ -41,8 +43,36 @@ pub fn format_text(
   }
 }
 
+/// Formats only the cells the provided byte range touches.
+///
+/// A cell is formatted in its entirety when the range touches any part of it,
+/// including its metadata and outputs, and the text outside of the sources of
+/// those cells is left as it was. A range that only touches the text between
+/// or outside of the cells formats nothing and one that covers the whole file
+/// formats it the same as `format_text`.
+///
+/// Only the sources of the cells the range touches are passed to
+/// `format_with_host`.
+pub fn format_text_range(
+  input_text: &str,
+  range: Range<usize>,
+  format_with_host: impl FnMut(&Path, String) -> HostFormatResult,
+) -> Result<Option<String>, FormatTextError> {
+  let body = input_text.strip_prefix('\u{FEFF}').unwrap_or(input_text);
+  let bom_len = input_text.len() - body.len();
+  let end = range.end.saturating_sub(bom_len).min(body.len());
+  let range = range.start.saturating_sub(bom_len).min(end)..end;
+  if range.start == 0 && range.end == body.len() {
+    return format_text(input_text, format_with_host);
+  }
+  let result = format_inner(body, Some(&range), format_with_host)?;
+  // the bom is outside of the cells, so it's kept
+  Ok(result.map(|text| format!("{}{}", &input_text[..bom_len], text)))
+}
+
 fn format_inner(
   input_text: &str,
+  range: Option<&Range<usize>>,
   format_with_host: impl FnMut(&Path, String) -> HostFormatResult,
 ) -> Result<Option<String>, FormatTextError> {
   let parse_result = jsonc_parser::parse_to_ast(
@@ -68,7 +98,7 @@ fn format_inner(
     return Ok(None);
   };
 
-  Ok(match format_root(input_text, &root_value, format_with_host) {
+  Ok(match format_root(input_text, &root_value, range, format_with_host) {
     Some(text) => {
       #[cfg(debug_assertions)]
       validate_output_json(&text)?;
@@ -81,6 +111,7 @@ fn format_inner(
 fn format_root(
   input_text: &str,
   root_value: &jsonc_parser::ast::Value,
+  range: Option<&Range<usize>>,
   mut format_with_host: impl FnMut(&Path, String) -> HostFormatResult,
 ) -> Option<String> {
   let root_obj = root_value.as_object()?;
@@ -90,6 +121,7 @@ fn format_root(
   let text_changes: Vec<TextChange> = cells
     .elements
     .iter()
+    .filter(|element| range.is_none_or(|range| touches(element.start()..element.end(), range)))
     .filter_map(|element| get_cell_text_change(input_text, element, maybe_default_language, &mut format_with_host))
     .collect();
 
@@ -97,6 +129,14 @@ fn format_root(
     None
   } else {
     Some(apply_text_changes(input_text, text_changes))
+  }
+}
+
+fn touches(cell: Range<usize>, range: &Range<usize>) -> bool {
+  if range.is_empty() {
+    cell.start <= range.start && range.start <= cell.end
+  } else {
+    range.start < cell.end && range.end > cell.start
   }
 }
 
@@ -171,17 +211,21 @@ struct CodeBlockText<'a> {
   // (https://github.com/jupyter/nbformat/blob/0708dd627d9ef81b12f231defb0d94dd7e80e3f4/nbformat/v4/nbformat.v4.5.schema.json#L460C7-L468C8)
   is_array: bool,
   indent_text: &'a str,
-  replace_range: std::ops::Range<usize>,
+  replace_range: Range<usize>,
   source: String,
 }
 
 fn analyze_code_block<'a>(cell: &jsonc_parser::ast::Object<'a>, file_text: &'a str) -> Option<CodeBlockText<'a>> {
   let mut indent_text = "";
-  let mut replace_range = std::ops::Range::default();
+  let mut replace_range = Range::default();
   let mut is_array = false;
   let cell_source = match &cell.get("source")?.value {
     jsonc_parser::ast::Value::Array(items) => {
       is_array = true;
+      if items.elements.is_empty() {
+        // there's no string to replace
+        return None;
+      }
       let mut strings = Vec::with_capacity(items.elements.len());
       for (i, element) in items.elements.iter().enumerate() {
         let string_lit = element.as_string_lit()?;
@@ -430,6 +474,205 @@ mod test {
 }
 "
     );
+  }
+
+  #[test]
+  fn formats_range_with_bom() {
+    // the spec files can't express this since editors strip the bom
+    let input_text = "\u{FEFF}{\"cells\":[{\"cell_type\":\"markdown\",\"source\":\"a\"},{\"cell_type\":\"markdown\",\"source\":\"b\"}]}";
+    let format = |range: Range<usize>| {
+      let mut calls = Vec::new();
+      let output = format_text_range(input_text, range, |_, text| {
+        calls.push(text.clone());
+        Ok(Some(format!("{}_formatted", text)))
+      })
+      .unwrap();
+      (calls, output)
+    };
+
+    // these ranges are in the first cell when not accounting for the bom
+    let start = input_text.find("\"b\"").unwrap();
+    let second_cell_start = input_text.find("},{").unwrap() + 2;
+    for range in [start..start + 1, second_cell_start..second_cell_start + 3] {
+      let (calls, output) = format(range);
+      assert_eq!(calls, vec!["b"]);
+      assert_eq!(
+        output.as_deref(),
+        Some(
+          "\u{FEFF}{\"cells\":[{\"cell_type\":\"markdown\",\"source\":\"a\"},{\"cell_type\":\"markdown\",\"source\":\"b_formatted\"}]}"
+        )
+      );
+    }
+
+    // the last byte of the first cell, which is the comma when not accounting for the bom
+    let (calls, output) = format(second_cell_start - 2..second_cell_start - 1);
+    assert_eq!(calls, vec!["a"]);
+    assert_eq!(
+      output.as_deref(),
+      Some(
+        "\u{FEFF}{\"cells\":[{\"cell_type\":\"markdown\",\"source\":\"a_formatted\"},{\"cell_type\":\"markdown\",\"source\":\"b\"}]}"
+      )
+    );
+
+    // within the first cell and the bom
+    let (calls, output) = format(1..20);
+    assert_eq!(calls, vec!["a"]);
+    assert_eq!(
+      output.as_deref(),
+      Some(
+        "\u{FEFF}{\"cells\":[{\"cell_type\":\"markdown\",\"source\":\"a_formatted\"},{\"cell_type\":\"markdown\",\"source\":\"b\"}]}"
+      )
+    );
+
+    let (calls, output) = format(start..start + 1);
+    assert_eq!(calls, vec!["b"]);
+    assert_eq!(
+      output.as_deref(),
+      Some(
+        "\u{FEFF}{\"cells\":[{\"cell_type\":\"markdown\",\"source\":\"a\"},{\"cell_type\":\"markdown\",\"source\":\"b_formatted\"}]}"
+      )
+    );
+
+    // nothing touched, so the bom is left alone
+    for range in [0..0, 0..3, 1..2, 0..4] {
+      let (calls, output) = format(range);
+      assert!(calls.is_empty());
+      assert_eq!(output, None);
+    }
+
+    // the whole file is formatted the same as when not providing a range
+    for range in [0..input_text.len(), 3..input_text.len(), 0..usize::MAX] {
+      let (calls, output) = format(range);
+      assert_eq!(calls, vec!["a", "b"]);
+      assert_eq!(
+        output,
+        format_text(input_text, |_, text| Ok(Some(format!("{}_formatted", text)))).unwrap()
+      );
+      assert!(!output.unwrap().starts_with('\u{FEFF}'));
+    }
+    let unchanged = |range: Range<usize>| format_text_range(input_text, range, |_, _| Ok(None)).unwrap();
+    assert_eq!(unchanged(0..input_text.len()).as_deref(), Some(&input_text[3..]));
+    assert_eq!(unchanged(start..start + 1), None);
+  }
+
+  #[test]
+  fn formats_range_out_of_bounds() {
+    let input_text =
+      "{\"cells\":[{\"cell_type\":\"markdown\",\"source\":\"a\"},{\"cell_type\":\"markdown\",\"source\":\"b\"}]}";
+    let len = input_text.len();
+    let second_cell_start = input_text.find("},{").unwrap() + 2;
+    let format = |range: Range<usize>| {
+      let mut calls = Vec::new();
+      format_text_range(input_text, range, |_, text| {
+        calls.push(text);
+        Ok(None)
+      })
+      .unwrap();
+      calls
+    };
+
+    // past the end
+    assert!(format(len..len).is_empty());
+    assert!(format(len + 5..len + 10).is_empty());
+    assert!(format(usize::MAX..usize::MAX).is_empty());
+    // from within the file to past the end
+    assert_eq!(format(second_cell_start..len + 10), vec!["b"]);
+    assert_eq!(format(second_cell_start..usize::MAX), vec!["b"]);
+    assert_eq!(format(1..usize::MAX), vec!["a", "b"]);
+    // a start after the end is a cursor at the end
+    #[allow(clippy::reversed_empty_ranges)]
+    {
+      assert_eq!(format(len..second_cell_start), vec!["b"]);
+      assert_eq!(format(usize::MAX..second_cell_start - 1), vec!["a"]);
+      assert!(format(len..2).is_empty());
+    }
+  }
+
+  #[test]
+  fn formats_range_with_carriage_return_line_feeds() {
+    // the spec files can't express this since they normalize line endings
+    let input_text = "{\r\n \"cells\": [\r\n  {\r\n   \"cell_type\": \"markdown\",\r\n   \"source\": [\r\n    \"a\\r\\n\",\r\n    \"b\"\r\n   ]\r\n  },\r\n  {\r\n   \"cell_type\": \"markdown\",\r\n   \"source\": \"c\"\r\n  }\r\n ]\r\n}\r\n";
+    let start = input_text.find("\"b\"").unwrap();
+    let mut calls = Vec::new();
+    let output = format_text_range(input_text, start..start + 1, |_, text| {
+      calls.push(text.clone());
+      Ok(Some(format!("{}_formatted\r\n", text)))
+    })
+    .unwrap();
+    assert_eq!(calls, vec!["a\r\nb"]);
+    assert_eq!(
+      output.as_deref(),
+      Some(
+        "{\r\n \"cells\": [\r\n  {\r\n   \"cell_type\": \"markdown\",\r\n   \"source\": [\r\n    \"a\\r\\n\",\n    \"b_formatted\"\r\n   ]\r\n  },\r\n  {\r\n   \"cell_type\": \"markdown\",\r\n   \"source\": \"c\"\r\n  }\r\n ]\r\n}\r\n"
+      )
+    );
+  }
+
+  #[test]
+  fn formats_range_with_tab_indentation() {
+    // tabs are hard to see in the spec files
+    let input_text = "{\n\t\"cells\": [\n\t\t{\n\t\t\t\"cell_type\": \"markdown\",\n\t\t\t\"source\": [\n\t\t\t\t\"a\"\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"cell_type\": \"markdown\",\n\t\t\t\"source\": [\n\t\t\t\t\"b\"\n\t\t\t]\n\t\t}\n\t]\n}\n";
+    let start = input_text.find("\"b\"").unwrap();
+    let output = format_text_range(input_text, start..start + 1, |_, text| {
+      Ok(Some(format!("{}\n\tformatted\n", text)))
+    })
+    .unwrap();
+    assert_eq!(
+      output.as_deref(),
+      Some(
+        "{\n\t\"cells\": [\n\t\t{\n\t\t\t\"cell_type\": \"markdown\",\n\t\t\t\"source\": [\n\t\t\t\t\"a\"\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"cell_type\": \"markdown\",\n\t\t\t\"source\": [\n\t\t\t\t\"b\\n\",\n\t\t\t\t\"\\tformatted\"\n\t\t\t]\n\t\t}\n\t]\n}\n"
+      )
+    );
+  }
+
+  #[test]
+  fn formats_range_only_passing_touched_cells_to_host() {
+    let input_text = "{\"cells\":[{\"cell_type\":\"markdown\",\"source\":\"a\"},{\"cell_type\":\"code\",\"metadata\":{\"vscode\":{\"languageId\":\"typescript\"}},\"source\":[\"b\\n\",\"c\"]},{\"cell_type\":\"markdown\",\"source\":\"d\"}]}";
+    let start = input_text.find("\"c\"").unwrap();
+    let mut calls = Vec::new();
+    let output = format_text_range(input_text, start..start + 1, |path, text| {
+      calls.push((path.to_path_buf(), text));
+      Ok(None)
+    })
+    .unwrap();
+    assert_eq!(calls, vec![(PathBuf::from("code_block.ts"), "b\nc".to_string())]);
+    assert_eq!(output, None);
+  }
+
+  #[test]
+  fn formats_range_when_host_errors() {
+    let input_text = "{\"cells\":[{\"cell_type\":\"markdown\",\"source\":\"a\"},{\"cell_type\":\"markdown\",\"source\":\"b\"},{\"cell_type\":\"markdown\",\"source\":\"c\"}]}";
+    let start = input_text.find("\"a\"").unwrap();
+    let end = input_text.find("\"b\"").unwrap() + 1;
+    let output = format_text_range(input_text, start..end, |_, text| {
+      if text == "a" {
+        Err("failed".into())
+      } else {
+        Ok(Some(format!("{}_formatted", text)))
+      }
+    })
+    .unwrap();
+    assert_eq!(
+      output.as_deref(),
+      Some(
+        "{\"cells\":[{\"cell_type\":\"markdown\",\"source\":\"a\"},{\"cell_type\":\"markdown\",\"source\":\"b_formatted\"},{\"cell_type\":\"markdown\",\"source\":\"c\"}]}"
+      )
+    );
+  }
+
+  #[test]
+  fn formats_range_of_empty_or_invalid_text() {
+    for text in ["", " ", "// comment"] {
+      for range in [0..0, 0..1, 5..10] {
+        let output = format_text_range(text, range, |_, _| panic!("should not format")).unwrap();
+        assert_eq!(output, None, "text: {:?}", text);
+      }
+    }
+
+    let text = "{\"cells\":[{\"cell_type\":\"markdown\",\"source\":\"a\"}";
+    let start = text.find("\"a\"").unwrap();
+    let result = format_text_range(text, start..start + 1, |_, _| panic!("should not format"));
+    assert!(matches!(result, Err(FormatTextError::Parse(_))));
   }
 
   #[test]
