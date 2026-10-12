@@ -15,15 +15,15 @@ ${changelog}
 Then in your project's directory with a dprint.json file, run:
 
 \`\`\`shellsession
-dprint config add jupyter
+dprint add jupyter
 \`\`\`
 
 Then add some additional formatting plugins to format the code blocks with. For example:
 
 \`\`\`shellsession
-dprint config add typescript
-dprint config add markdown
-dprint config add ruff
+dprint add typescript
+dprint add markdown
+dprint add ruff
 \`\`\`
 
 ## JS Formatting API
