@@ -14,5 +14,8 @@ import * as fs from "fs";
 const buffer = fs.readFileSync(getPath());
 const formatter = createFromBuffer(buffer);
 
-console.log(formatter.formatText("notebook.ipynb", "{}"));
+console.log(formatter.formatText({
+  filePath: "notebook.ipynb",
+  fileText: "{}",
+}));
 ```
